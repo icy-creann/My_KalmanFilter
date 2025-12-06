@@ -2,19 +2,19 @@ import numpy as np
 
 """
 卡尔曼滤波
-使用前需先确定矩阵参数(Fk,Qk,Rk,Hk,X0->Xk,Pk)
+使用前需先确定矩阵参数(F,Q,R,H,X0->Xk,Pk)
 """
 
 
 class lcy_KF:
     """
     Xk:状态向量
-    zk:观测向量
-    Fk:状态转移矩阵
-    Pk:协方差矩阵
-    Qk:过程噪声协方差矩阵
-    Rk:观测噪声协方差矩阵
-    Hk:观测矩阵
+    Zk:观测向量
+    F:状态转移矩阵
+    P:协方差矩阵
+    Q:过程噪声协方差矩阵
+    R:观测噪声协方差矩阵
+    H:观测矩阵
     Kk:卡尔曼增益
     """
 
@@ -55,25 +55,83 @@ class lcy_KF:
         return self.Xk
 
 if __name__ == '__main__':
-    #模拟输入数据
-    input_datas = np.array([[1, 2], [3, 4], [5, 6]])
-
-
+    import numpy as np
+    import matplotlib.pyplot as plt
+    import pandas as pd
     # 定义参数
-    Fk = np.array([[1, 1], [0, 1]])
-    Qk = np.array([[0.1, 0], [0, 0.1]])
-    Rk = np.array([[1, 0], [0, 1]])
-    Hk = np.array([[1, 0], [0, 1]])
-    Xk = np.array([[0], [0]])
-    Pk = np.array([[1, 0], [0, 1]])
-    Zk = np.array([[0], [0]])
-    kf = lcy_KF(Fk, Qk, Rk, Hk, Xk, Pk, Zk)
-    # 进行滤波
+    dt  = 0.01  # 时间间隔
+
+    F = np.array([[1, 0, dt, 0],  # x(t) = x(t-1) + vx(t-1)×dt
+                  [0, 1, 0, dt],  # y(t) = y(t-1) + vy(t-1)×dt
+                  [0, 0, 1, 0],   # vx(t) = vx(t-1) （匀速，速度不变）
+                  [0, 0, 0, 1]])    # vy(t) = vy(t-1)                  #状态转移矩阵
+
+    Q = np.eye(4) * 0.01                                               # 过程噪声协方差矩阵
+
+    R = np.eye(4) * 0.1                                                # 测量噪声协方差矩阵
+
+    H = np.eye(4)                                                      # 观测矩阵
+
+     # 初始状态
+    Xk = np.array([0, 0, 0, 0])                                # 初始状态向量
+    Pk = np.eye(4) * 10  #                                             # 初始状态协方差矩阵
+    kf = lcy_KF(F, Q, R, H, Xk, Pk, Zk=None)                           # 创建卡尔曼滤波器对象
+    
+
+    #模拟输入数据
+    read_datas = pd.read_csv('./My_KalmanFilter/mouse_sim_data.csv',header=None).values
+    read_datas = read_datas[1:,:].astype(np.float32)
+    input_datas = read_datas[:, -4:]
     output_datas = []
     for z in input_datas:
         Xk = kf.filter(z)
         output_datas.append(Xk)
-    output_datas = np.array(output_datas).reshape(-1, 2)
-    print("滤波结果：")
-    print(output_datas)
+
+
+    # 画图
+    true_datas = read_datas[:, 1:5]
+    input_datas = read_datas[:, -4:]
+    output_datas = np.array(output_datas).reshape(-1, 4)
+    t = read_datas[:, 0]
+    # 绘制结果
+    plt.figure(figsize=(12, 8))
+    plt.rcParams['font.sans-serif'] = ['SimHei']
+    #子图1:x/y位置对比
+    plt.subplot(2, 2, 1)
+    plt.plot(t, true_datas[:, 0], label='真实x位置', color='g')
+    plt.plot(t, input_datas[:, 0], label='观测x位置', color='r', linestyle='dotted')
+    plt.plot(t, output_datas[:, 0], label='滤波后x位置', color='b', linestyle='dashed')
+    plt.legend()
+    plt.xlabel('时间s')
+    plt.ylabel('位置m')
+    plt.title('x位置对比')
+    plt.subplot(2, 2, 2)
+    plt.plot(t, true_datas[:, 1], label='真实y位置', color='g')
+    plt.plot(t, input_datas[:, 1], label='观测y位置', color='r', linestyle='dotted')
+    plt.plot(t, output_datas[:, 1], label='滤波后y位置', color='b', linestyle='dashed')
+    plt.legend()
+    plt.xlabel('时间s')
+    plt.ylabel('位置m')
+    plt.title('y位置对比')
+    #子图2:x/y速度对比
+    plt.subplot(2, 2, 3)
+    plt.plot(t, true_datas[:, 2], label='真实x速度', color='g')
+    plt.plot(t, input_datas[:, 2], label='观测x速度', color='r', linestyle='dotted')
+    plt.plot(t, output_datas[:, 2], label='滤波后x速度', color='b', linestyle='dashed')
+    plt.legend()
+    plt.xlabel('时间s')
+    plt.ylabel('速度m/s')
+    plt.title('x速度对比')
+    plt.subplot(2, 2, 4)
+    plt.plot(t, true_datas[:, 3], label='真实y速度', color='g')
+    plt.plot(t, input_datas[:, 3], label='观测y速度', color='r', linestyle='dotted')
+    plt.plot(t, output_datas[:, 3], label='滤波后y速度', color='b', linestyle='dashed')
+    plt.legend()
+    plt.xlabel('时间s')
+    plt.ylabel('速度m/s')
+    plt.title('y速度对比')
+    plt.tight_layout()
+    plt.show()
+
+
 
