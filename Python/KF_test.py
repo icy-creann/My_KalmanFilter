@@ -2,7 +2,7 @@ import cv2
 import numpy as np
 from sys import exit
 
-from Python.KF import KF
+from KF import KF
 
 # This delay will affect the Kalman update rate
 DELAY_MSEC = 100
