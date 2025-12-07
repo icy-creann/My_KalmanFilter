@@ -1,1 +1,5 @@
 该项目为作者学习卡尔曼滤波过程中写的，旨在将卡尔曼滤波包装成库，方便其他项目使用。
+主要内容：
+1. 卡尔曼滤波类(lcy_KF.py)(lcy_EKF.py)
+2. 数据获取类(get_kf_data.py)(get_ekf_data.py)
+3. 数据包类(mouse_sim_kf_data.csv)(mouse_sim_ekf_data.csv)
